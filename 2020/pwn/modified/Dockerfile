@@ -2,20 +2,33 @@
 # sudo docker run -d -p 30000:30000 --rm -it modified
 
 FROM ubuntu:20.04
+MAINTAINER unknonwn
+LABEL Description="write-it" VERSION='1.0'
 
-RUN apt-get update
+#installation
+RUN apt update
+RUN apt install -y socat
 
-RUN useradd -d /home/ctf/ -m -p ctf -s /bin/bash ctf
-RUN echo "ctf:ctf" | chpasswd
+#user
+RUN adduser --disabled-password --gecos '' pwn
+RUN chown -R root:pwn /home/pwn/
+RUN chmod 750 /home/pwn
 
-WORKDIR /home/ctf
+RUN touch /home/pwn/flag.txt
 
-COPY modified .
-COPY flag.txt .
-COPY ynetd .
+RUN export TERM=xterm
 
-RUN chown -R root:root /home/ctf
+#Copying file
+WORKDIR /home/pwn/
+COPY ./modified /home/pwn
+COPY flag.txt /home/pwn
 
-USER ctf
+#Setting perm..
+RUN chown root:pwn /home/pwn/flag.txt
+RUN chmod +x /home/pwn/modified
+RUN chmod 440 /home/pwn/flag.txt
+
 EXPOSE 30000
-CMD ./ynetd -p 30000 ./modified
+
+#Run the program with socat
+CMD su pwn -c "socat TCP-LISTEN:30000,reuseaddr,fork EXEC:/home/pwn/modified"
